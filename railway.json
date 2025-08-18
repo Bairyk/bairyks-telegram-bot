@@ -1,0 +1,242 @@
+# railway.json - Railway.app deployment configuration
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
+
+---
+# render.yaml - Render.com deployment configuration
+services:
+  - type: worker
+    name: telegram-media-bot
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      apt-get update && apt-get install -y yt-dlp
+      pip install gallery-dl
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: DEEZER_ARL
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11"
+
+---
+# Procfile - Heroku deployment configuration
+worker: python bot.py
+
+---
+# app.json - Heroku app configuration
+{
+  "name": "Telegram Media Downloader Bot",
+  "description": "A Telegram bot for downloading media from multiple platforms",
+  "repository": "https://github.com/yourusername/telegram-media-bot",
+  "logo": "https://telegram.org/img/t_logo.png",
+  "keywords": ["telegram", "bot", "downloader", "media", "python"],
+  "stack": "heroku-22",
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    },
+    {
+      "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git"
+    }
+  ],
+  "env": {
+    "TELEGRAM_BOT_TOKEN": {
+      "description": "Your Telegram Bot Token from @BotFather",
+      "required": true
+    },
+    "DEEZER_ARL": {
+      "description": "Your Deezer ARL token for music downloads (optional)",
+      "required": false
+    }
+  },
+  "formation": {
+    "worker": {
+      "quantity": 1,
+      "size": "eco"
+    }
+  },
+  "addons": []
+}
+
+---
+# docker-compose.yml - Docker deployment configuration
+version: '3.8'
+
+services:
+  telegram-bot:
+    build: .
+    container_name: telegram-media-bot
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DEEZER_ARL=${DEEZER_ARL}
+      - MAX_FILE_SIZE=52428800
+    volumes:
+      - ./logs:/app/logs
+      - ./temp:/tmp/telegram_bot
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+---
+# Dockerfile - Docker container configuration
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install yt-dlp and gallery-dl
+RUN pip install yt-dlp gallery-dl
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY bot.py .
+COPY config/ ./config/
+
+# Create necessary directories
+RUN mkdir -p logs temp
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Run the bot
+CMD ["python", "bot.py"]
+
+---
+# .github/workflows/deploy.yml - GitHub Actions CI/CD
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yt-dlp
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v
+        
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to Railway
+      uses: bervProject/railway-deploy@v1.2.0
+      with:
+        railway_token: ${{ secrets.RAILWAY_TOKEN }}
+        service: telegram-media-bot
+
+---
+# systemd service file - Linux service configuration
+# Save as /etc/systemd/system/telegram-bot.service
+
+[Unit]
+Description=Telegram Media Downloader Bot
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=telegram-bot
+Group=telegram-bot
+WorkingDirectory=/opt/telegram-bot
+ExecStart=/usr/bin/python3 /opt/telegram-bot/bot.py
+Restart=always
+RestartSec=10
+Environment=PATH=/usr/bin:/usr/local/bin
+EnvironmentFile=/opt/telegram-bot/.env
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/telegram-bot/logs /tmp/telegram_bot
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
+
+---
+# nginx.conf - Reverse proxy configuration (if needed for webhooks)
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location /webhook {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
