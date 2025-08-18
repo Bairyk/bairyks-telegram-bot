@@ -1,0 +1,1089 @@
+# 🚀 Complete Deployment & Usage Guide
+## Telegram Media Downloader Bot
+
+This guide covers everything you need to know about deploying and using your Telegram bot across different platforms, from free cloud services to enterprise deployments.
+
+---
+
+## 🎯 Quick Overview
+
+**What we'll cover:**
+- 5 deployment methods (free and paid)
+- Step-by-step setup for each platform  
+- Configuration and security
+- Monitoring and maintenance
+- Troubleshooting common issues
+- Usage examples and best practices
+
+**Time investment:**
+- Quick deployment: 15-30 minutes
+- Full production setup: 1-2 hours
+
+---
+
+## 🆓 FREE Deployment Options
+
+### Option 1: Railway.app (⭐ RECOMMENDED)
+
+**Why Railway?**
+- ✅ Generous free tier (500 hours/month)
+- ✅ Automatic deployments from GitHub
+- ✅ Built-in environment variable management
+- ✅ Excellent uptime and performance
+- ✅ No credit card required for free tier
+
+#### Step-by-Step Railway Deployment
+
+**1. Prepare Your Repository**
+```bash
+# Fork the repository on GitHub or create your own
+git clone <your-repo-url>
+cd telegram-media-bot
+
+# Ensure all files are present
+ls -la
+# Should see: bot.py, requirements.txt, README.md, etc.
+```
+
+**2. Create Railway Account**
+- Go to [Railway.app](https://railway.app)
+- Click "Login" → "Login with GitHub"
+- Authorize Railway to access your repositories
+
+**3. Deploy Your Bot**
+- Click "Deploy from GitHub repo"
+- Select your `telegram-media-bot` repository
+- Railway automatically detects it's a Python project
+
+**4. Configure Environment Variables**
+- In your Railway dashboard, go to your project
+- Click "Variables" tab
+- Add these variables:
+
+```env
+TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHijklMNopqrsTUvwxyz
+DEEZER_ARL=your_deezer_arl_token_here_optional
+PYTHON_VERSION=3.11
+```
+
+**5. Deploy and Monitor**
+- Railway automatically builds and deploys
+- Check "Deployments" tab for build status
+- View logs in "Deploy Logs" section
+
+**Example Railway Configuration:**
+```json
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements.txt && pip install yt-dlp gallery-dl"
+  },
+  "deploy": {
+    "startCommand": "python bot.py",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
+```
+
+---
+
+### Option 2: Render.com
+
+**Why Render?**
+- ✅ True free tier (no time limits)
+- ✅ Automatic SSL certificates
+- ✅ Good performance and uptime
+- ✅ Simple setup process
+
+#### Step-by-Step Render Deployment
+
+**1. Create Render Account**
+- Visit [Render.com](https://render.com)
+- Sign up with GitHub
+
+**2. Create New Service**
+- Click "New +" → "Background Worker"
+- Connect your repository
+- Choose "Background Worker" (not Web Service)
+
+**3. Configure Service**
+```yaml
+Name: telegram-media-bot
+Environment: Python 3
+Region: Oregon (US West)
+Branch: main
+
+Build Command:
+pip install -r requirements.txt && 
+apt-get update && 
+apt-get install -y yt-dlp && 
+pip install gallery-dl
+
+Start Command:
+python bot.py
+```
+
+**4. Set Environment Variables**
+- In Render dashboard, go to "Environment"
+- Add your variables:
+
+```env
+TELEGRAM_BOT_TOKEN=your_token_here
+DEEZER_ARL=your_arl_token_optional
+PYTHON_VERSION=3.11.0
+```
+
+**5. Deploy**
+- Click "Create Background Worker"
+- Monitor deployment in "Events" tab
+
+---
+
+### Option 3: Heroku (Limited Free Tier)
+
+**⚠️ Note**: Heroku eliminated their free tier, but still worth knowing for educational purposes.
+
+#### Heroku Deployment Process
+
+**1. Install Heroku CLI**
+```bash
+# macOS
+brew install heroku/brew/heroku
+
+# Ubuntu/Debian
+curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
+
+# Windows
+# Download from https://devcenter.heroku.com/articles/heroku-cli
+```
+
+**2. Login and Create App**
+```bash
+heroku login
+heroku create your-bot-name-here
+```
+
+**3. Configure Buildpacks**
+```bash
+heroku buildpacks:add heroku/python
+heroku buildpacks:add https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
+```
+
+**4. Set Environment Variables**
+```bash
+heroku config:set TELEGRAM_BOT_TOKEN="your_token_here"
+heroku config:set DEEZER_ARL="your_arl_token"
+```
+
+**5. Create Procfile**
+```bash
+echo "worker: python bot.py" > Procfile
+```
+
+**6. Deploy**
+```bash
+git add .
+git commit -m "Deploy to Heroku"
+git push heroku main
+heroku ps:scale worker=1
+```
+
+---
+
+## 💰 PAID Deployment Options
+
+### Option 4: VPS Deployment (DigitalOcean, Linode, Vultr)
+
+**Best for**: Production use, full control, 24/7 uptime
+**Cost**: $5-20/month for basic VPS
+
+#### Complete VPS Setup
+
+**1. Create VPS Instance**
+
+**DigitalOcean:**
+- Create account at [DigitalOcean](https://digitalocean.com)
+- Create new Droplet
+- Choose: Ubuntu 22.04 LTS, Basic plan ($6/month)
+- Add SSH key for secure access
+
+**2. Connect to Your VPS**
+```bash
+ssh root@your_server_ip
+```
+
+**3. Run Automated Setup**
+```bash
+# Download and run our setup script
+wget https://raw.githubusercontent.com/your-repo/telegram-media-bot/main/setup.sh
+chmod +x setup.sh
+sudo ./setup.sh
+```
+
+**4. Manual Setup (Alternative)**
+```bash
+# Update system
+apt update && apt upgrade -y
+
+# Install dependencies
+apt install -y python3 python3-pip python3-venv git nginx certbot ffmpeg yt-dlp
+
+# Install gallery-dl
+pip3 install gallery-dl
+
+# Create bot user
+useradd -m -s /bin/bash telegram-bot
+
+# Switch to bot user
+su - telegram-bot
+
+# Clone repository
+git clone https://github.com/your-repo/telegram-media-bot.git
+cd telegram-media-bot
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Configure bot
+nano .env
+# Add your tokens here
+```
+
+**5. Create Systemd Service**
+```bash
+# Switch back to root
+exit
+
+# Create service file
+sudo tee /etc/systemd/system/telegram-bot.service > /dev/null << EOF
+[Unit]
+Description=Telegram Media Downloader Bot
+After=network.target
+
+[Service]
+Type=simple
+User=telegram-bot
+Group=telegram-bot
+WorkingDirectory=/home/telegram-bot/telegram-media-bot
+ExecStart=/home/telegram-bot/telegram-media-bot/venv/bin/python bot.py
+Restart=always
+RestartSec=10
+Environment=PATH=/usr/bin:/usr/local/bin
+EnvironmentFile=/home/telegram-bot/telegram-media-bot/.env
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start service
+systemctl daemon-reload
+systemctl enable telegram-bot
+systemctl start telegram-bot
+
+# Check status
+systemctl status telegram-bot
+```
+
+**6. Setup Monitoring**
+```bash
+# Install monitoring tools
+apt install -y htop iotop netstat-nat
+
+# Setup log rotation
+tee /etc/logrotate.d/telegram-bot > /dev/null << EOF
+/home/telegram-bot/telegram-media-bot/logs/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    copytruncate
+}
+EOF
+```
+
+---
+
+### Option 5: Docker Deployment
+
+**Best for**: Containerized environments, Kubernetes, easy scaling
+
+#### Docker Setup
+
+**1. Create Dockerfile**
+```dockerfile
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install yt-dlp and gallery-dl
+RUN pip install yt-dlp gallery-dl
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY bot.py .
+COPY config/ ./config/
+
+# Create directories
+RUN mkdir -p logs temp
+
+# Run bot
+CMD ["python", "bot.py"]
+```
+
+**2. Create docker-compose.yml**
+```yaml
+version: '3.8'
+
+services:
+  telegram-bot:
+    build: .
+    container_name: telegram-media-bot
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DEEZER_ARL=${DEEZER_ARL}
+      - MAX_FILE_SIZE=52428800
+    volumes:
+      - ./logs:/app/logs
+      - ./temp:/tmp/telegram_bot
+    networks:
+      - bot-network
+
+  # Optional: Add monitoring
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 --cleanup
+    restart: unless-stopped
+
+networks:
+  bot-network:
+    driver: bridge
+```
+
+**3. Deploy with Docker**
+```bash
+# Clone repository
+git clone https://github.com/your-repo/telegram-media-bot.git
+cd telegram-media-bot
+
+# Create .env file
+echo "TELEGRAM_BOT_TOKEN=your_token_here" > .env
+echo "DEEZER_ARL=your_arl_token" >> .env
+
+# Build and run
+docker-compose up -d
+
+# Check logs
+docker-compose logs -f telegram-bot
+
+# Update
+docker-compose pull && docker-compose up -d
+```
+
+---
+
+## 🔧 Configuration Deep Dive
+
+### Essential Environment Variables
+
+**Create `.env` file with these variables:**
+
+```env
+# REQUIRED: Telegram Bot Token
+TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHijklMNopqrsTUvwxyz
+
+# OPTIONAL: Deezer ARL token for full music downloads
+DEEZER_ARL=your_very_long_arl_token_here
+
+# OPTIONAL: Custom settings
+MAX_FILE_SIZE=52428800          # 50MB in bytes
+TEMP_DIR=/tmp/telegram_bot      # Temporary files directory
+LOG_LEVEL=INFO                  # DEBUG, INFO, WARNING, ERROR
+
+# OPTIONAL: Rate limiting
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_REQUESTS=10          # Requests per minute per user
+```
+
+### Getting Required Tokens
+
+#### 1. Telegram Bot Token
+
+**Step-by-step process:**
+1. Open Telegram and search for `@BotFather`
+2. Send `/newbot` command
+3. Choose a name for your bot: "My Media Downloader"
+4. Choose a username: "my_media_downloader_bot" (must end with 'bot')
+5. Copy the token: `1234567890:ABCdefGHijklMNopqrsTUvwxyz`
+
+**Security tips:**
+- Never share your token publicly
+- Regenerate if compromised: `/token` to @BotFather
+- Use environment variables, never hardcode
+
+#### 2. Deezer ARL Token (Optional but Recommended)
+
+**What is ARL?**
+- Authentication token from Deezer
+- Allows full track downloads (not just 30s previews)
+- Required for premium features
+
+**How to get ARL:**
+1. **Login to Deezer** in your browser
+2. **Open Developer Tools** (F12)
+3. **Go to Application/Storage** → Cookies → deezer.com
+4. **Find 'arl' cookie** and copy its value
+5. **Should look like**: `abcdef123456...` (very long string)
+
+**Alternative method (using browser console):**
+```javascript
+// Open console (F12) on deezer.com and run:
+document.cookie.split(';').find(row => row.includes('arl')).split('=')[1]
+```
+
+---
+
+## 📱 Bot Usage Guide
+
+### Basic Commands
+
+#### 1. `/start` - Welcome Message
+**Usage**: `/start`
+**Response**: Shows available commands and features
+
+#### 2. `/search` - Music Search
+**Usage**: `/search <song name> [artist]`
+
+**Examples:**
+```
+/search Bohemian Rhapsody Queen
+/search Shape of You
+/search Blinding Lights The Weeknd
+/search Never Gonna Give You Up
+```
+
+**What happens:**
+1. Bot searches Deezer database
+2. Finds best match
+3. Downloads preview (30s) or full track (with ARL)
+4. Sends as audio file with metadata
+
+#### 3. `/download` - URL Download
+**Usage**: `/download <url>`
+
+**Supported platforms:**
+```
+/download https://reddit.com/r/videos/comments/abc123/title/
+/download https://www.instagram.com/p/ABC123def/
+/download https://www.instagram.com/reel/XYZ789/
+/download https://tiktok.com/@username/video/1234567890
+/download https://vm.tiktok.com/ABC123/
+```
+
+### Advanced Usage
+
+#### Inline Mode
+Use bot in any chat without adding it:
+```
+@your_bot_name search Despacito
+@your_bot_name https://reddit.com/r/videos/comments/example/
+```
+
+#### Auto URL Detection
+Simply send a supported URL in chat:
+```
+https://www.instagram.com/p/ABC123/
+```
+Bot automatically detects and downloads.
+
+#### Bulk Operations
+Send multiple URLs (one per message):
+```
+https://reddit.com/r/videos/comments/1/
+https://reddit.com/r/videos/comments/2/
+https://reddit.com/r/videos/comments/3/
+```
+
+### Platform-Specific Features
+
+#### Reddit
+- ✅ Public videos, images, GIFs
+- ✅ Comments with media
+- ✅ Direct reddit.com and redd.it links
+- ❌ Private subreddits (requires authentication)
+
+#### Instagram  
+- ✅ Public posts and reels
+- ✅ Photo carousels (downloads all images)
+- ⚠️ Stories (may require authentication)
+- ❌ Private accounts (requires login)
+
+#### TikTok
+- ✅ Public videos
+- ✅ Various URL formats (tiktok.com, vm.tiktok.com)
+- ✅ Watermark removal
+- ❌ Private videos
+
+#### Deezer
+- ✅ Track search and download
+- ✅ Preview mode (without ARL)
+- ✅ Full tracks (with ARL token)
+- ✅ Metadata embedding (artist, title, album)
+
+---
+
+## 🔐 Security & Privacy
+
+### Data Protection
+
+**What the bot stores:**
+- ❌ **Nothing permanently** - all data is temporary
+- ✅ **Temporary files** - deleted after sending
+- ✅ **Logs** - for debugging (no personal data)
+
+**What the bot doesn't store:**
+- User messages or URLs
+- Downloaded media files
+- User personal information
+- Authentication tokens (except your own)
+
+### Security Best Practices
+
+#### For Bot Owners:
+```bash
+# 1. Secure your .env file
+chmod 600 .env
+chown your_user:your_user .env
+
+# 2. Regular token rotation
+# Regenerate bot token monthly via @BotFather
+
+# 3. Monitor logs for suspicious activity
+tail -f logs/bot.log | grep ERROR
+
+# 4. Keep dependencies updated
+pip install --upgrade -r requirements.txt
+```
+
+#### For Users:
+- Only download content you have permission to access
+- Respect copyright laws and platform ToS
+- Don't share the bot token publicly
+- Report any issues or suspicious behavior
+
+### Rate Limiting & Abuse Prevention
+
+**Built-in protections:**
+- File size limits (50MB max)
+- Download timeouts (2 minutes max)
+- Error tracking and circuit breaking
+- Platform-specific rate limiting
+
+---
+
+## 📊 Monitoring & Maintenance
+
+### Health Monitoring
+
+#### Basic Health Checks
+```bash
+# Check if bot is running
+ps aux | grep bot.py
+
+# Check system resources
+htop
+df -h  # Disk usage
+free -h  # Memory usage
+
+# Check logs
+tail -f logs/bot.log
+
+# For systemd service
+systemctl status telegram-bot
+journalctl -u telegram-bot -f
+```
+
+#### Advanced Monitoring Setup
+
+**1. Setup Log Analysis**
+```bash
+# Install log analysis tools
+pip install python-telegram-bot[socks]
+
+# Create log monitoring script
+cat > monitor_bot.py << EOF
+#!/usr/bin/env python3
+import re
+import time
+from collections import defaultdict
+
+def analyze_logs():
+    error_counts = defaultdict(int)
+    
+    with open('logs/bot.log', 'r') as f:
+        for line in f:
+            if 'ERROR' in line:
+                # Extract error type
+                match = re.search(r'(E\d+)', line)
+                if match:
+                    error_counts[match.group(1)] += 1
+    
+    print("Error Summary:")
+    for error, count in error_counts.items():
+        print(f"  {error}: {count} occurrences")
+
+if __name__ == '__main__':
+    analyze_logs()
+EOF
+
+chmod +x monitor_bot.py
+```
+
+**2. Setup Alerting**
+```bash
+# Create alert script
+cat > alert_bot.sh << EOF
+#!/bin/bash
+
+# Check if bot is running
+if ! pgrep -f "bot.py" > /dev/null; then
+    # Bot is down - send alert
+    curl -X POST "https://api.telegram.com/bot$ADMIN_BOT_TOKEN/sendMessage" \
+         -d chat_id="$ADMIN_CHAT_ID" \
+         -d text="🚨 Bot is DOWN! Please check the server."
+fi
+
+# Check disk space
+DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+if [ $DISK_USAGE -gt 90 ]; then
+    curl -X POST "https://api.telegram.com/bot$ADMIN_BOT_TOKEN/sendMessage" \
+         -d chat_id="$ADMIN_CHAT_ID" \
+         -d text="⚠️ Disk usage is at ${DISK_USAGE}%"
+fi
+EOF
+
+chmod +x alert_bot.sh
+
+# Add to crontab (check every 5 minutes)
+echo "*/5 * * * * /path/to/alert_bot.sh" | crontab -
+```
+
+### Performance Optimization
+
+#### 1. System Optimization
+```bash
+# Increase file descriptor limits
+echo "* soft nofile 65536" >> /etc/security/limits.conf
+echo "* hard nofile 65536" >> /etc/security/limits.conf
+
+# Optimize Python performance
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+
+# Setup log rotation
+logrotate -f /etc/logrotate.d/telegram-bot
+```
+
+#### 2. Bot Configuration
+```python
+# Add to your .env file
+CONCURRENT_DOWNLOADS=3        # Max simultaneous downloads
+CACHE_TIMEOUT=3600           # Cache results for 1 hour
+CLEANUP_INTERVAL=300         # Clean temp files every 5 minutes
+```
+
+### Updates & Maintenance
+
+#### Regular Maintenance Tasks
+```bash
+#!/bin/bash
+# maintenance.sh - Run weekly
+
+# Update system packages
+apt update && apt upgrade -y
+
+# Update Python packages
+pip install --upgrade -r requirements.txt
+pip install --upgrade yt-dlp gallery-dl
+
+# Clean old logs
+find logs/ -name "*.log" -mtime +30 -delete
+
+# Clean temp files
+find /tmp/telegram_bot/ -mtime +1 -delete
+
+# Restart bot service
+systemctl restart telegram-bot
+
+echo "Maintenance completed: $(date)"
+```
+
+---
+
+## 🐛 Troubleshooting Guide
+
+### Common Issues & Solutions
+
+#### 1. Bot Not Responding
+
+**Symptoms:**
+- Bot doesn't reply to commands
+- "Bot is not responding" in Telegram
+
+**Diagnosis:**
+```bash
+# Check if bot is running
+ps aux | grep bot.py
+
+# Check logs for errors
+tail -20 logs/bot.log
+
+# Test network connectivity
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe"
+```
+
+**Solutions:**
+```bash
+# Restart the bot
+systemctl restart telegram-bot
+
+# Check environment variables
+cat .env
+
+# Verify bot token
+python3 -c "
+import requests
+token = 'YOUR_TOKEN'
+r = requests.get(f'https://api.telegram.org/bot{token}/getMe')
+print(r.json())
+"
+```
+
+#### 2. Download Failures
+
+**Symptoms:**
+- "Download failed" errors
+- Files not being sent
+
+**Common causes:**
+```bash
+# Check if external tools are installed
+which yt-dlp
+which gallery-dl
+
+# Test tools manually
+yt-dlp --version
+gallery-dl --version
+
+# Test specific URL
+yt-dlp "https://reddit.com/r/test/comments/example/" --simulate
+```
+
+**Solutions:**
+```bash
+# Update download tools
+pip install --upgrade yt-dlp gallery-dl
+
+# Check temporary directory permissions
+ls -la /tmp/telegram_bot/
+chmod 777 /tmp/telegram_bot/
+
+# Clear cache
+rm -rf ~/.cache/yt-dlp/
+rm -rf ~/.cache/gallery-dl/
+```
+
+#### 3. Authentication Issues
+
+**Symptoms:**
+- "Authentication failed" errors
+- Can't download from Deezer/Instagram
+
+**For Deezer:**
+```bash
+# Verify ARL token
+python3 -c "
+arl = 'YOUR_ARL_TOKEN'
+print(f'ARL length: {len(arl)}')
+print(f'ARL starts with: {arl[:10]}...')
+"
+
+# Test ARL validity
+curl -H "Cookie: arl=$DEEZER_ARL" "https://www.deezer.com/ajax/gw-light.php"
+```
+
+**For Instagram:**
+```bash
+# Check if login is required
+gallery-dl --simulate "https://instagram.com/p/example/"
+
+# Setup authentication (if needed)
+gallery-dl --cookies-from-browser chrome "https://instagram.com/p/example/"
+```
+
+#### 4. Memory/Disk Issues
+
+**Symptoms:**
+- Bot crashes randomly
+- "No space left on device" errors
+
+**Diagnosis:**
+```bash
+# Check memory usage
+free -h
+ps aux --sort=-%mem | head
+
+# Check disk usage
+df -h
+du -sh /tmp/telegram_bot/
+du -sh logs/
+```
+
+**Solutions:**
+```bash
+# Clean temporary files
+find /tmp/telegram_bot/ -mtime +1 -delete
+
+# Setup automatic cleanup
+echo "0 2 * * * find /tmp/telegram_bot/ -mtime +1 -delete" | crontab -
+
+# Increase swap space (if needed)
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+```
+
+### Performance Issues
+
+#### High CPU Usage
+```bash
+# Monitor bot performance
+htop -p $(pgrep -f bot.py)
+
+# Check for infinite loops in logs
+grep -i "loop\|infinite\|stuck" logs/bot.log
+
+# Reduce concurrent downloads
+echo "CONCURRENT_DOWNLOADS=1" >> .env
+```
+
+#### High Memory Usage
+```bash
+# Monitor memory leaks
+while true; do
+  ps -p $(pgrep -f bot.py) -o pid,vsz,rss,comm
+  sleep 60
+done
+
+# Implement memory limits
+systemctl edit telegram-bot.service
+# Add:
+[Service]
+MemoryLimit=512M
+```
+
+### Network Issues
+
+#### Connection Problems
+```bash
+# Test internet connectivity
+ping google.com
+nslookup api.telegram.org
+
+# Test proxy settings (if using)
+curl --proxy $HTTP_PROXY https://api.telegram.org
+
+# Check firewall
+ufw status
+iptables -L
+```
+
+#### Rate Limiting
+```bash
+# Check for rate limit messages
+grep -i "rate\|limit\|429" logs/bot.log
+
+# Implement backoff strategy
+echo "RATE_LIMIT_BACKOFF=60" >> .env  # Wait 60s after rate limit
+```
+
+---
+
+## 🚀 Advanced Deployment Scenarios
+
+### Enterprise Deployment
+
+#### Load Balancing Setup
+```yaml
+# docker-compose-enterprise.yml
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/ssl/certs
+    depends_on:
+      - bot1
+      - bot2
+
+  bot1:
+    build: .
+    environment:
+      - TELEGRAM_BOT_TOKEN=${BOT_TOKEN_1}
+      - INSTANCE_ID=bot1
+    volumes:
+      - ./logs:/app/logs
+
+  bot2:
+    build: .
+    environment:
+      - TELEGRAM_BOT_TOKEN=${BOT_TOKEN_2} 
+      - INSTANCE_ID=bot2
+    volumes:
+      - ./logs:/app/logs
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis_data:/data
+
+  monitoring:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+volumes:
+  redis_data:
+```
+
+#### Kubernetes Deployment
+```yaml
+# kubernetes-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegram-bot
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: telegram-bot
+  template:
+    metadata:
+      labels:
+        app: telegram-bot
+    spec:
+      containers:
+      - name: bot
+        image: your-registry/telegram-bot:latest
+        env:
+        - name: TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: bot-secrets
+              key: token
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+        volumeMounts:
+        - name: temp-storage
+          mountPath: /tmp/telegram_bot
+      volumes:
+      - name: temp-storage
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bot-secrets
+data:
+  token: base64-encoded-token-here
+```
+
+### Multi-Region Deployment
+
+```bash
+# Deploy to multiple regions for better performance
+regions=("us-east-1" "eu-west-1" "ap-southeast-1")
+
+for region in "${regions[@]}"; do
+  echo "Deploying to $region..."
+  
+  # AWS deployment example
+  aws ecs create-service \
+    --region $region \
+    --cluster telegram-bot-cluster \
+    --service-name telegram-bot-$region \
+    --task-definition telegram-bot:latest \
+    --desired-count 2
+done
+```
+
+---
+
+## 📈 Scaling Considerations
+
+### When to Scale
+
+**Signs you need to scale:**
+- Response time > 5 seconds
+- CPU usage consistently > 80%
+- Memory usage > 90%
+- Download queue backing up
+- User complaints about slowness
+
+### Scaling Strategies
+
+#### Vertical Scaling (Scale Up)
+```bash
+# Increase server resources
+# DigitalOcean example
+doctl compute droplet resize droplet-id --size s-2vcpu-4gb --resize-disk
+
+# Docker resource limits
+docker update --memory="2g" --cpus="2" telegram-bot
+```
+
+#### Horizontal Scaling (Scale Out)
+```bash
+# Multiple bot instances with load balancer
+docker-compose -f docker-compose-scale.yml up --scale bot=3
+
+# Kubernetes auto-scaling
+kubectl autoscale deployment telegram-bot --cpu-percent=70 --min=2 --max=10
+```
+
+---
+
+This comprehensive guide should cover everything you need to successfully deploy and run your Telegram Media Downloader Bot. Choose the deployment method that best fits your needs, budget, and technical requirements.
