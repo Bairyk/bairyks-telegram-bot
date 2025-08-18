@@ -1,0 +1,21 @@
+# Core Telegram bot dependencies
+python-telegram-bot==20.7
+requests==2.31.0
+
+# Media downloading tools
+yt-dlp>=2023.12.30
+gallery-dl>=1.26.0
+
+# Additional utilities
+pathlib2==2.3.7
+aiofiles==23.2.1
+python-dotenv==1.0.0
+
+# Optional: For Deezer downloading (if using advanced methods)
+# Note: Some Deezer downloaders may require additional dependencies
+pydeezer==1.4.1
+mutagen==1.47.0
+
+# For deployment
+gunicorn==21.2.0
+uvloop==0.19.0
