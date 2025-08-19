@@ -69,10 +69,14 @@ class PlatformDetector:
             r'deezer\.com/playlist/(\d+)'
         ],
         'reddit': [
-            r'reddit\.com/r/\w+/comments/\w+',
+            r'(?:www\.)?reddit\.com/r/\w+/comments/\w+(?:/[^?]*)?(?:\?.*)?',  # Full posts with optional www, title, and params
             r'redd\.it/\w+',
-            r'old\.reddit\.com/r/\w+/comments/\w+'
-            r'reddit\.com/r/\w+/s/\w+'  # Add this line for share URLs
+            r'old\.reddit\.com/r/\w+/comments/\w+(?:/[^?]*)?(?:\?.*)?',      # Old Reddit with optional title and params
+            r'(?:www\.)?reddit\.com/r/\w+/s/\w+'                            # Share URLs with optional www
+            r'https?://(?:www\.)?reddit\.com/r/\w+/comments/\w+(?:/[^?]*)?(?:\?.*)?',  # Full posts with optional https/www, title, and params
+            r'https?://redd\.it/\w+',                                                 # Short URLs with optional https
+            r'https?://old\.reddit\.com/r/\w+/comments/\w+(?:/[^?]*)?(?:\?.*)?',     # Old Reddit with optional https, title, and params
+            r'https?://(?:www\.)?reddit\.com/r/\w+/s/\w+'
         ],
         'instagram': [
             r'instagram\.com/p/[\w-]+',
