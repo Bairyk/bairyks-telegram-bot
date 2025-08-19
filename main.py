@@ -72,6 +72,7 @@ class PlatformDetector:
             r'reddit\.com/r/\w+/comments/\w+',
             r'redd\.it/\w+',
             r'old\.reddit\.com/r/\w+/comments/\w+'
+            r'reddit\.com/r/\w+/s/\w+'  # Add this line for share URLs
         ],
         'instagram': [
             r'instagram\.com/p/[\w-]+',
