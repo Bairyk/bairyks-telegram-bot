@@ -3,7 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "bot.py",
+    "startCommand": "python main.py",
     "restartPolicyType": "ON_FAILURE"
   }
 }
