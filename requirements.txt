@@ -13,7 +13,7 @@ python-dotenv==1.0.0
 
 # Optional: For Deezer downloading (if using advanced methods)
 # Note: Some Deezer downloaders may require additional dependencies
-pydeezer==1.4.1
+pydeezer==1.0.8
 mutagen==1.47.0
 
 # For deployment
