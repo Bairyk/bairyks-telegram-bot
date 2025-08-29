@@ -404,16 +404,24 @@ class RedditDownloader(BaseDownloader):
     """Enhanced Reddit downloader"""
     
     async def download_media(self, url: str) -> Tuple[Optional[List[str]], Optional[str], Optional[str]]:
-        """Download media from Reddit with better error handling"""
+        """Download media from Reddit with better error handling and proper video processing"""
         try:
             # Clean up URL and ensure it's in API format
             clean_url = self._clean_reddit_url(url)
+            
+            # For Reddit videos, prefer yt-dlp for proper audio/video merging
+            if 'reddit.com' in clean_url:
+                logger.info("Trying yt-dlp first for Reddit (better video handling)")
+                try:
+                    return await self._download_with_ytdlp(clean_url, "Reddit Post")
+                except Exception as e:
+                    logger.warning(f"yt-dlp failed, trying JSON API: {e}")
             
             # Try multiple approaches for getting Reddit data
             post_data = None
             title = None
             
-            # Method 1: Try JSON API
+            # Method 1: Try JSON API (fallback for images/galleries)
             try:
                 api_url = clean_url + '.json'
                 headers = {
@@ -430,28 +438,16 @@ class RedditDownloader(BaseDownloader):
             except Exception as e:
                 logger.warning(f"JSON API failed: {e}")
             
-            # Method 2: Try using yt-dlp for Reddit (fallback)
-            if not post_data:
-                try:
-                    return await self._download_with_ytdlp(clean_url, "Reddit Post")
-                except Exception as e:
-                    logger.warning(f"yt-dlp fallback failed: {e}")
-            
-            # Method 3: If we have post data, process it
+            # Process post data if we have it (mainly for images/galleries)
             if post_data and title:
                 files = []
                 
-                # Handle different Reddit media types
-                if post_data.get('is_video') and post_data.get('secure_media'):
-                    # Reddit video
-                    reddit_video = post_data['secure_media'].get('reddit_video', {})
-                    video_url = reddit_video.get('fallback_url') or reddit_video.get('hls_url')
-                    if video_url:
-                        file_path = await self._download_file(video_url, 'reddit_video.mp4')
-                        if file_path:
-                            files.append(file_path)
+                # Skip video processing here - let yt-dlp handle videos
+                if post_data.get('is_video'):
+                    return await self._download_with_ytdlp(clean_url, title)
                 
-                elif post_data.get('url'):
+                # Handle images only
+                if post_data.get('url'):
                     media_url = post_data['url']
                     
                     if any(ext in media_url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
@@ -460,15 +456,8 @@ class RedditDownloader(BaseDownloader):
                         file_path = await self._download_file(media_url, f'reddit_image.{ext}')
                         if file_path:
                             files.append(file_path)
-                    
-                    elif 'v.redd.it' in media_url:
-                        # Try to download v.redd.it
-                        file_path = await self._download_file(media_url, 'vreddit.mp4')
-                        if file_path:
-                            files.append(file_path)
-                    
-                    elif any(domain in media_url for domain in ['imgur.com', 'gfycat.com', 'redgifs.com']):
-                        # Use yt-dlp for external media
+                    else:
+                        # For other media, use yt-dlp
                         return await self._download_with_ytdlp(media_url, title)
                 
                 # Handle gallery posts
@@ -480,7 +469,6 @@ class RedditDownloader(BaseDownloader):
                         media_id = item.get('media_id')
                         if media_id in media_metadata:
                             media_info = media_metadata[media_id]
-                            # Get highest quality image
                             if 's' in media_info:  # Image data
                                 resolutions = media_info.get('p', [])
                                 if resolutions:
@@ -493,11 +481,9 @@ class RedditDownloader(BaseDownloader):
                 
                 if files:
                     return files, title, None
-                else:
-                    return None, title, "No media found in this post!"
             
-            # If all methods failed
-            return None, None, "Could not access Reddit post. It might be private or deleted."
+            # Final fallback to yt-dlp
+            return await self._download_with_ytdlp(clean_url, "Reddit Post")
                 
         except Exception as e:
             logger.error(f"Reddit download error: {e}")
