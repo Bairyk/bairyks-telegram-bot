@@ -14,6 +14,9 @@ python-dotenv==1.0.0
 # Optional: Alternative Deezer support (lightweight)
 # pydeezer==1.0.8
 
+# Note: FFmpeg is required for proper video processing but needs to be installed separately
+# Railway: Add FFmpeg buildpack or use: apt-get install ffmpeg
+
 # Remove problematic dependencies for Railway:
 # gallery-dl>=1.26.0  # May cause issues on Railway
 # pathlib2==2.3.7    # Not needed in Python 3.4+
