@@ -2,28 +2,21 @@
 python-telegram-bot==20.7
 requests==2.31.0
 
-# Media downloading tools
+# Media downloading tools - Railway compatible versions
 yt-dlp>=2023.12.30
-gallery-dl>=1.26.0
 
 # Audio processing and metadata (for album covers)
 mutagen==1.47.0
 
-# Additional utilities
-pathlib2==2.3.7
-aiofiles==23.2.1
+# Essential utilities only
 python-dotenv==1.0.0
 
-# Optional: For enhanced Deezer downloading
-# Note: deemix requires separate installation and may need additional setup
-# Install separately with: pip install deemix
-pydeezer==1.0.8
+# Optional: Alternative Deezer support (lightweight)
+# pydeezer==1.0.8
 
-# For deployment
-gunicorn==21.2.0
-uvloop==0.19.0
-
-# Development dependencies (optional)
-pytest==7.4.3
-black==23.12.0
-flake8==6.1.0
+# Remove problematic dependencies for Railway:
+# gallery-dl>=1.26.0  # May cause issues on Railway
+# pathlib2==2.3.7    # Not needed in Python 3.4+
+# aiofiles==23.2.1   # Not used in current code
+# gunicorn==21.2.0   # Railway handles this
+# uvloop==0.19.0     # Can cause issues on some platforms
